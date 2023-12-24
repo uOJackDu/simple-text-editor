@@ -1,0 +1,28 @@
+.custom-button {
+  background: none;
+  border: none;
+  color: #ffffff;
+}
+
+.custom-button:hover {
+  color: #808080;
+}
+
+body {
+  overflow: hidden;
+  background-color: #2b2a33;
+  color: #ffffff;
+}
+
+#editor {
+  width: 100%;
+  resize: none;
+  border: none;
+  outline: none;
+  line-height: 20px;
+  background: none;
+  color: #ffffff;
+}
+#operations {
+  display: flex;
+}
