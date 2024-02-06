@@ -9,6 +9,7 @@
 }
 
 body {
+  padding: 0;
   overflow: hidden;
   background-color: #2b2a33;
   color: #ffffff;
@@ -16,11 +17,12 @@ body {
 
 #editor {
   width: 100%;
-  resize: none;
   border: none;
   outline: none;
-  line-height: 20px;
+  resize: none;
+  padding: 0;
   background: none;
+  line-height: 16px;
   color: #ffffff;
 }
 #operations {

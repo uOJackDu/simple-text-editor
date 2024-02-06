@@ -1,11 +1,16 @@
 const editor = document.getElementById("editor");
 const saveButton = document.getElementById("save-button");
 const downloadButton = document.getElementById("download-button");
-const loadFileButton = document.getElementById("load-file-button");
+const openButton = document.getElementById("open-button");
 const fileInput = document.getElementById("file-input");
 
 const savedTextName = "SimpleTextEditor_savedText";
 const savedText = localStorage.getItem(savedTextName);
+
+const lineHeight = parseInt(
+  window.getComputedStyle(editor).getPropertyValue("line-height")
+);
+const autoScrollTime = 128; // in ms
 let previousScrollTop = 0;
 
 updateEditorRows();
@@ -32,7 +37,7 @@ downloadButton.addEventListener("click", function () {
   saveTextAsFile();
 });
 
-loadFileButton.addEventListener("click", function () {
+openButton.addEventListener("click", function () {
   fileInput.click();
 });
 
@@ -82,9 +87,6 @@ function saveTextAsFile() {
 
 // align the text to prevent partial lines
 function alignText() {
-  const lineHeight = parseInt(
-    window.getComputedStyle(editor).getPropertyValue("line-height")
-  );
   const scrollTop = editor.scrollTop;
 
   let nextLineTop;
@@ -95,7 +97,7 @@ function alignText() {
     // Scrolling up
     nextLineTop = Math.floor(scrollTop / lineHeight) * lineHeight;
   }
-  autoScroll(nextLineTop, 128);
+  autoScroll(nextLineTop, autoScrollTime);
 }
 
 // smooth scroll
