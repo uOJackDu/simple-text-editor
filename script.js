@@ -7,41 +7,36 @@ const fileInput = document.getElementById("file-input");
 const savedTextName = "SimpleTextEditor_savedText";
 const savedText = localStorage.getItem(savedTextName);
 
-const lineHeight = parseInt(
-  window.getComputedStyle(editor).getPropertyValue("line-height")
-);
-const autoScrollTime = 128; // in ms
-let previousScrollTop = 0;
-
-updateEditorRows();
-window.addEventListener('resize', updateEditorRows);
-
-// set focus on the textarea
-editor.focus();
-
-// set focus back to textarea when it loses focus
-editor.addEventListener("blur", function () {
-  editor.focus();
-});
-
 // load saved text from localStorage
 if (savedText) {
   editor.value = savedText;
 }
 
-saveButton.addEventListener("click", function () {
-  updateLocalStorage();
+editor.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+
+    const cursorPosition = editor.selectionStart;
+    const lineStart = editor.value.lastIndexOf('\n', cursorPosition - 1) + 1;
+    const currentLine = editor.value.substring(lineStart, cursorPosition);
+    const leadingSpaces = currentLine.match(/^\s*/)[0];
+
+    insertText('\n');
+    insertText(leadingSpaces);
+
+  } else if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+    event.preventDefault();
+    save();
+  }
 });
 
-downloadButton.addEventListener("click", function () {
-  saveTextAsFile();
-});
+saveButton.addEventListener("click", save);
 
-openButton.addEventListener("click", function () {
-  fileInput.click();
-});
+downloadButton.addEventListener("click", saveTextAsFile);
 
-fileInput.addEventListener("change", function (event) {
+openButton.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", () => {
   const file = fileInput.files[0];
   const reader = new FileReader();
 
@@ -52,25 +47,12 @@ fileInput.addEventListener("change", function (event) {
   reader.readAsText(file);
 });
 
-editor.addEventListener("scroll", function () {
-  clearTimeout(editor.scrollTimeout);
-  editor.scrollTimeout = setTimeout(alignText, 50);
-});
-
-document.addEventListener("keydown", function (event) {
-  if ((event.ctrlKey || event.metaKey) && event.key === "s") {
-    event.preventDefault(); // disable the default browser save action
-    updateLocalStorage();
-  }
-});
-
-function updateEditorRows() {
-  const windowHeight = window.innerHeight;
-  const lineHeight = parseInt(window.getComputedStyle(editor).lineHeight);
-  editor.rows = Math.floor(windowHeight / lineHeight) - 2;
+function save() {
+  editor.value = trimTrailingWhitespace(editor.value);
+  saveToLocalStorage();
 }
 
-function updateLocalStorage() {
+function saveToLocalStorage() {
   localStorage.setItem(savedTextName, editor.value);
 }
 
@@ -85,41 +67,10 @@ function saveTextAsFile() {
   link.click();
 }
 
-// align the text to prevent partial lines
-function alignText() {
-  const scrollTop = editor.scrollTop;
-
-  let nextLineTop;
-  if (scrollTop > previousScrollTop) {
-    // Scrolling down
-    nextLineTop = Math.ceil(scrollTop / lineHeight) * lineHeight;
-  } else {
-    // Scrolling up
-    nextLineTop = Math.floor(scrollTop / lineHeight) * lineHeight;
-  }
-  autoScroll(nextLineTop, autoScrollTime);
+function insertText(text) {
+  editor.setRangeText(text, editor.selectionStart, editor.selectionStart, 'end');
 }
 
-// smooth scroll
-function autoScroll(to, duration) {
-  const start = editor.scrollTop;
-  const change = to - start;
-  const framesPerSecond = 60;
-  const totalFrames = (duration / 1000) * framesPerSecond;
-  const increment = change / totalFrames;
-  let frameCount = 0;
-
-  const animateScroll = function () {
-    frameCount++;
-    const val = start + increment * frameCount;
-    editor.scrollTop = val;
-    if (frameCount < totalFrames) {
-      requestAnimationFrame(animateScroll);
-    } else {
-      editor.scrollTop = to; // Set the final scroll position explicitly
-    }
-    previousScrollTop = editor.scrollTop;
-  };
-
-  animateScroll();
+function trimTrailingWhitespace(text) {
+  return text.split('\n').map(line => line.replace(/\s+$/, '')).join('\n');
 }
