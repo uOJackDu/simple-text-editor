@@ -116,11 +116,12 @@ function addClosingPair(openingPair) {
 
   if (openingPair in pairings) {
     insertText(pairings[openingPair]);
+    moveCursorTo(editor.selectionStart - 1);
   }
 }
 
 function insertIndentLevel() {
-  insertText(' '.repeat(indentLevel));
+  insertText(" ".repeat(indentLevel));
 }
 
 function moveCursorTo(pos) {
