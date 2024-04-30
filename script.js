@@ -7,48 +7,77 @@ const fileInput = document.getElementById("file-input");
 const savedTextName = "SimpleTextEditor_savedText";
 const savedText = localStorage.getItem(savedTextName);
 
-// load saved text from localStorage
-if (savedText) {
-  editor.value = savedText;
-}
+let spellCheckEnabled = false;
+let autoTrimTailingWhitespaceEnabled = true;
+let autoIndentEnabled = true;
+let autoInsertClosingPairEnabled = true;
+let autoInsertIndentLevelEnabled = true;
+let indentLevel = 4;
 
 editor.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
-
-    const cursorPosition = editor.selectionStart;
-    const lineStart = editor.value.lastIndexOf('\n', cursorPosition - 1) + 1;
-    const currentLine = editor.value.substring(lineStart, cursorPosition);
-    const leadingSpaces = currentLine.match(/^\s*/)[0];
-
-    insertText('\n');
-    insertText(leadingSpaces);
-
+    onEnterKeyDown();
   } else if ((event.ctrlKey || event.metaKey) && event.key === "s") {
     event.preventDefault();
     save();
   }
 });
 
-saveButton.addEventListener("click", save);
-
-downloadButton.addEventListener("click", saveTextAsFile);
-
-openButton.addEventListener("click", () => fileInput.click());
-
-fileInput.addEventListener("change", () => {
-  const file = fileInput.files[0];
-  const reader = new FileReader();
-
-  reader.onload = function (event) {
-    editor.value = event.target.result;
-  };
-
-  reader.readAsText(file);
+editor.addEventListener('input', (event) => {
+  if (autoInsertClosingPairEnabled) {
+    addClosingPair(event.data);
+  }
 });
 
+saveButton.addEventListener("click", save);
+downloadButton.addEventListener("click", saveTextAsFile);
+openButton.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", onFileInputChange);
+
+// init
+
+editor.setAttribute('spellcheck', spellCheckEnabled);
+
+// load saved text from localStorage
+if (savedText) {
+  editor.value = savedText;
+}
+
+function onEnterKeyDown() {
+  const pos = editor.selectionStart;
+  const curChar = editor.value[pos - 1]
+  const nextChar = editor.value[pos];
+  const lineStart = editor.value.lastIndexOf('\n', pos - 1) + 1;
+  const currentLine = editor.value.substring(lineStart, pos);
+
+  insertText('\n');
+
+  if (autoIndentEnabled) {
+    const leadingSpaces = currentLine.match(/^\s*/)[0];
+    insertText(leadingSpaces);
+  }
+  if (autoInsertIndentLevelEnabled) {
+    const pairings = {
+      "{": "}",
+      "(": ")",
+      "[": "]",
+      "<": ">"
+    };
+
+    if (curChar in pairings && pairings[curChar] === nextChar) {
+      moveCursorTo(pos);
+      onEnterKeyDown();
+    } else if (curChar in pairings || curChar === ':') {
+      insertIndentLevel();
+    }
+  }
+}
+
 function save() {
-  editor.value = trimTrailingWhitespace(editor.value);
+  if (autoTrimTailingWhitespaceEnabled) {
+    editor.value = trimTrailingWhitespace(editor.value);
+  }
   saveToLocalStorage();
 }
 
@@ -65,6 +94,38 @@ function saveTextAsFile() {
   link.download = filename;
   link.href = URL.createObjectURL(blob);
   link.click();
+}
+
+function onFileInputChange() {
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+
+  reader.onload = function (event) {
+    editor.value = event.target.result;
+  };
+  reader.readAsText(file);
+}
+
+function addClosingPair(openingPair) {
+  const pairings = {
+    "(": ")",
+    "{": "}",
+    "[": "]",
+    '"': '"'
+  };
+
+  if (openingPair in pairings) {
+    insertText(pairings[openingPair]);
+  }
+}
+
+function insertIndentLevel() {
+  insertText(' '.repeat(indentLevel));
+}
+
+function moveCursorTo(pos) {
+  editor.selectionStart = pos;
+  editor.selectionEnd = pos;
 }
 
 function insertText(text) {
