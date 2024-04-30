@@ -18,6 +18,14 @@ editor.addEventListener("keydown", (event) => {
   if (event.key === "Enter") {
     event.preventDefault();
     onEnterKeyDown();
+  } else if (
+    (event.ctrlKey || event.metaKey) && event.shiftKey && event.key === "ArrowLeft"
+  ) {
+    event.preventDefault();
+    selectToLineStart();
+  } else if ((event.ctrlKey || event.metaKey) && event.key === "ArrowLeft") {
+    event.preventDefault();
+    moveCursorToLineStart();
   } else if ((event.ctrlKey || event.metaKey) && event.key === "s") {
     event.preventDefault();
     save();
@@ -26,7 +34,7 @@ editor.addEventListener("keydown", (event) => {
 
 editor.addEventListener('input', (event) => {
   if (autoInsertClosingPairEnabled) {
-    addClosingPair(event.data);
+    insertClosingPair(event.data);
   }
 });
 
@@ -106,7 +114,7 @@ function onFileInputChange() {
   reader.readAsText(file);
 }
 
-function addClosingPair(openingPair) {
+function insertClosingPair(openingPair) {
   const pairings = {
     "(": ")",
     "{": "}",
@@ -124,13 +132,41 @@ function insertIndentLevel() {
   insertText(" ".repeat(indentLevel));
 }
 
+function insertText(text) {
+  editor.setRangeText(text, editor.selectionStart, editor.selectionStart, 'end');
+}
+
+function moveCursorToLineStart() {
+  const pos = editor.selectionStart;
+  const absoluteLineStart = editor.value.lastIndexOf('\n', pos - 1) + 1;
+  const currentLine = editor.value.substring(absoluteLineStart, pos);
+  const leadingSpaces = currentLine.match(/^\s*/)[0];
+  const finalPos = absoluteLineStart + leadingSpaces.length;
+
+  if (pos === finalPos) {
+    moveCursorTo(absoluteLineStart);
+  } else {
+    moveCursorTo(finalPos);
+  }
+}
+
+function selectToLineStart() {
+  const pos = editor.selectionStart;
+  const absoluteLineStart = editor.value.lastIndexOf('\n', pos - 1) + 1;
+  const currentLine = editor.value.substring(absoluteLineStart, pos);
+  const leadingSpaces = currentLine.match(/^\s*/)[0];
+  const finalPos = absoluteLineStart + leadingSpaces.length;
+
+  if (pos === finalPos) {
+    editor.selectionStart = absoluteLineStart;
+  } else {
+    editor.selectionStart = finalPos;
+  }
+}
+
 function moveCursorTo(pos) {
   editor.selectionStart = pos;
   editor.selectionEnd = pos;
-}
-
-function insertText(text) {
-  editor.setRangeText(text, editor.selectionStart, editor.selectionStart, 'end');
 }
 
 function trimTrailingWhitespace(text) {
